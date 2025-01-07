@@ -174,6 +174,8 @@ class GameState:
             # print("player is dead not adding score")
 
         self.players[self.player_turn].player_state.current_score = 0
+        self.players[self.player_turn].player_state.times_shot = 0
+        self.players[self.player_turn].player_state.is_dead = False
 
         next_player_turn = self.player_turn + 1
 
