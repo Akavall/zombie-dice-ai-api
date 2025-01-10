@@ -3,12 +3,10 @@ import pandas as pd
 from lightgbm import LGBMRegressor
 from collections import Counter
 
-from matches import one_match
-from monte_carlo import make_game_features
-from models import Greedy, MC_Model_A, MC_Model_B
+from model.matches import one_match
+from model.monte_carlo import make_game_features
+from model.models import Greedy, MC_Model_A, MC_Model_B
 
-def training_loop():
-    pass
 
 N_MATCHES = 1000
 N_GAMES = 500

@@ -1,16 +1,20 @@
 import uuid
-import random
 from typing import Dict, List
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel
 
 import os
-import uuid
+import lightgbm as lgb
+import pandas as pd
 
 from zombie_dice.zombie_dice import PlayerState, GameState, Player, init_game_state, init_player_state
+from model.monte_carlo import reformat_game_state_b
+from api.utils import load_model
 
 app = FastAPI()
+
+
+MODEL = load_model()
 
 @app.get("/zombie_dice")
 def serve_index():
@@ -40,7 +44,6 @@ def start_game():
     games[game_uuid] = game_state
 
     return game_uuid
-
 
 @app.post("/zombie_dice/take_turn")
 def take_turn(request: Request):
@@ -82,9 +85,22 @@ def take_turn(request: Request):
 
     if player.is_ai:
 
-        # implement AI logic here
+        features_move, cols_move = reformat_game_state_b(game_state, 1)
+        features_not_move, cols_not_move = reformat_game_state_b(game_state, 0)
 
-        if random.choice([0, 1]) == 0:
+        move_df = pd.DataFrame(data=[features_move], columns=cols_move)
+        not_move_df = pd.DataFrame(data=[features_not_move], columns=cols_not_move)
+
+        move_score = MODEL.predict(move_df)
+        not_move_score = MODEL.predict(not_move_df)
+
+        # Model A optimizes positiver socre
+        # Model B optimizes negative score
+
+        # This is assuming model B, since AI moves 2nd
+        if move_score < not_move_score:
+            should_continue = True 
+        else:
             should_continue = False
 
     turn_data = {}
@@ -111,7 +127,7 @@ def take_turn(request: Request):
     else:
         if player.player_state.is_dead or should_continue is False:
             game_state.end_turn()
-        game_state.end_round()
+            game_state.end_round()
 
     if game_state.winner:
         turn_data["Winner"] = game_state.winner.id

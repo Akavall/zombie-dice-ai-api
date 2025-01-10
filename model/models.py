@@ -7,8 +7,8 @@ import lightgbm
 
 # import torch
 
-from zombie_dice import Player, init_game_state, init_player_state
-from monte_carlo import reformat_game_state_a, reformat_game_state_b
+from zombie_dice.zombie_dice import Player, init_game_state, init_player_state
+from model.monte_carlo import reformat_game_state_a, reformat_game_state_b
 
 
 class RandomAI:

@@ -5,7 +5,7 @@ import time
 from collections import Counter
 import pandas as pd
 
-from zombie_dice import init_game_state, Player, init_player_state
+from zombie_dice.zombie_dice import init_game_state, Player, init_player_state
 
 
 def simulate_game(game_state, mc_model_a=None, mc_model_b=None, get_features_for_player="a"):
@@ -249,7 +249,6 @@ def make_game_features(n_games, mc_model=None, get_features_for_player="a"):
 
     df = pd.DataFrame(data=reformatted_states_list, columns=feature_names)
     df["target"] = winners
-    # y = pd.Series(winners)
 
     return df
 
@@ -267,15 +266,15 @@ if __name__ == "__main__":
 
     # print(f"winner is: {winner.id}")
 
-    N_GAMES=10000
+    N_GAMES=25000
     PLAYER="b"
 
-    X, y = make_game_features(n_games=N_GAMES, mc_model=None, get_features_for_player=PLAYER)
+    df = make_game_features(n_games=N_GAMES, mc_model=None, get_features_for_player=PLAYER)
 
-    df = X
-    df["target"] = y
+    # df = X
+    # df["target"] = y
 
-    df.to_csv(f"./traing_data/training_data_{PLAYER}_{N_GAMES}.csv", index=False)
+    df.to_csv(f"./model/training_data/training_data_{PLAYER}_{N_GAMES}.csv", index=False)
 
     # Next step is to train a lot of X and y
     # save them and test the model
