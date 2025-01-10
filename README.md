@@ -1,11 +1,11 @@
 
-### What is Zombie Dice?**
+### What is Zombie Dice?
 
 Zombie Dice is a push-your-luck dice game where players try to collect as many brains as possible without getting shot three times. Each turn, players roll dice representing humans (green, yellow, or red), and each die type has different probabilities for outcomes: brains, footsteps, and shotguns. The player who collects 13 brains first wins the game.
 
-### AI Approach to Zombie Dice**
+### AI Approach to Zombie Dice
 
-### Pure Monte Carlo strategy
+### Pure Monte Carlo Strategy
 
 
 ### Data Generation
