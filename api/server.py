@@ -2,19 +2,23 @@ import uuid
 from typing import Dict, List
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
-
 import os
 import lightgbm as lgb
 import pandas as pd
+import logging
 
 from zombie_dice.zombie_dice import PlayerState, GameState, Player, init_game_state, init_player_state
 from model.monte_carlo import reformat_game_state_b
 from api.utils import load_model
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+
 app = FastAPI()
 
-
 MODEL = load_model()
+
+PATH_TO_MODEL = os.getenv("PATH_TO_MODEL")
 
 @app.get("/zombie_dice")
 def serve_index():
@@ -26,7 +30,6 @@ def serve_index():
     return FileResponse(file_path, media_type="text/html")
 
 games: Dict[str, "GameState"] = {}
-
 
 @app.post("/zombie_dice/start_game")
 def start_game():
@@ -43,21 +46,18 @@ def start_game():
 
     games[game_uuid] = game_state
 
+    logging.info(f"Game created: {game_uuid}")
+    logging.info(f"Number of games stored: {len(games)}")
+
     return game_uuid
 
 @app.post("/zombie_dice/take_turn")
 def take_turn(request: Request):
     """
-    In the .html:
-      $.post("/zombie_dice/take_turn?uuid=" + game_state_id + 
-             "&player=You&continue=true", ...)
-    We'll interpret 'continue=true' to mean "roll," and 'continue=false' to mean "stop turn."
-    We then return JSON that parseTurnData can use.
+    Handles a turn in the Zombie Dice game.
     """
 
-
     bool_mapper = {"false": False, "true": True}
-
 
     qp = request.query_params
     uuid = qp.get("uuid")
@@ -65,7 +65,9 @@ def take_turn(request: Request):
     should_continue = qp.get("continue") 
 
     if should_continue not in bool_mapper:
-        raise HTTPException(status_code=404, detail=f"Invalid value for should_continue: {should_continue}")
+        message = f"Invalid value for should_continue: {should_continue}"
+        logging.error(message)
+        raise HTTPException(status_code=400, detail=message)
 
     should_continue = bool_mapper[should_continue]
 
@@ -73,13 +75,17 @@ def take_turn(request: Request):
         uuid = uuid.strip('"')
 
     if uuid not in games:
-        raise HTTPException(status_code=404, detail="Game not found")
+        message = "Game not found"
+        logging.error(message)
+        raise HTTPException(status_code=400, detail=message)
 
     game_state = games[uuid]
     player_id_to_player = {player.id: player for player in game_state.players}
 
     if player_id not in player_id_to_player:
-        raise HTTPException(status_code=404, detail="Player not found")
+        message = "Player not found"
+        logging.error(message)
+        raise HTTPException(status_code=400, detail=message)
 
     player = player_id_to_player[player_id]
 
@@ -94,7 +100,18 @@ def take_turn(request: Request):
         move_score = MODEL.predict(move_df)
         not_move_score = MODEL.predict(not_move_df)
 
-        # Model A optimizes positiver socre
+        # Log the detailed AI state in debug mode
+        debug_info = {
+            "game_id": uuid,
+            "cols_move": cols_move,
+            "cols_not_move": cols_not_move,
+            "features_move": features_move,
+            "features_not_move": features_not_move,
+            "path_to_model": PATH_TO_MODEL,
+        }
+        logging.debug(f"Detailed AI State: {debug_info}")
+
+        # Model A optimizes positive score
         # Model B optimizes negative score
 
         # This is assuming model B, since AI moves 2nd
